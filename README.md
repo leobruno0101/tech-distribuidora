@@ -70,7 +70,7 @@ Prefer working locally? You need Node.js and npm — [install with nvm](https://
 
 ```sh
 git clone https://github.com/leobruno0101/tech-distribuidora.git
-cd <repository-name>
+cd tech-distribuidora
 npm i
 npm run dev
 ```
