@@ -7,12 +7,13 @@ import {
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
-import { useEffect, useState, type ReactNode } from "react";
-import { Bell, RefreshCw } from "lucide-react";
+import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { AppSidebar } from "@/components/app-sidebar";
+import { NotificationBell, SyncButton, UserMenu } from "@/components/app-header";
+import { ERPProvider } from "@/lib/erp-store";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { Toaster } from "@/components/ui/sonner";
 
@@ -119,64 +120,34 @@ function RootShell({ children }: { children: ReactNode }) {
   );
 }
 
-function SyncClock() {
-  const [now, setNow] = useState<string | null>(null);
-
-  useEffect(() => {
-    const tick = () =>
-      setNow(
-        new Date().toLocaleTimeString("pt-BR", {
-          hour: "2-digit",
-          minute: "2-digit",
-          second: "2-digit",
-        }),
-      );
-    tick();
-    const id = setInterval(tick, 5000);
-    return () => clearInterval(id);
-  }, []);
-
-  return (
-    <span className="hidden items-center gap-1.5 text-xs text-muted-foreground sm:inline-flex">
-      <RefreshCw className="h-3.5 w-3.5 animate-spin [animation-duration:4s]" />
-      API sincronizada {now ?? "--:--:--"}
-    </span>
-  );
-}
-
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
 
   return (
     <QueryClientProvider client={queryClient}>
-      <SidebarProvider>
-        <div className="flex min-h-screen w-full">
-          <AppSidebar />
-          <div className="flex min-w-0 flex-1 flex-col">
-            <header className="sticky top-0 z-10 flex h-14 items-center gap-3 border-b bg-card/80 px-3 backdrop-blur sm:px-6">
-              <SidebarTrigger />
-              <span className="text-sm font-semibold">TechDistribuidora</span>
-              <div className="ml-auto flex items-center gap-3">
-                <SyncClock />
-                <span className="relative inline-flex h-8 w-8 items-center justify-center rounded-md border">
-                  <Bell className="h-4 w-4 text-muted-foreground" />
-                  <span className="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-danger px-1 text-[10px] font-semibold text-danger-foreground">
-                    3
-                  </span>
-                </span>
-                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">
-                  LB
-                </span>
-              </div>
-            </header>
-            {/* Required: nested routes render here. */}
-            <main className="flex-1 p-4 sm:p-6">
-              <Outlet />
-            </main>
+      <ERPProvider>
+        <SidebarProvider>
+          <div className="flex min-h-screen w-full">
+            <AppSidebar />
+            <div className="flex min-w-0 flex-1 flex-col">
+              <header className="sticky top-0 z-10 flex h-14 items-center gap-3 border-b bg-card/80 px-3 backdrop-blur sm:px-6">
+                <SidebarTrigger />
+                <span className="text-sm font-semibold">TechDistribuidora</span>
+                <div className="ml-auto flex items-center gap-3">
+                  <SyncButton />
+                  <NotificationBell />
+                  <UserMenu />
+                </div>
+              </header>
+              {/* Required: nested routes render here. */}
+              <main className="flex-1 p-4 sm:p-6">
+                <Outlet />
+              </main>
+            </div>
           </div>
-        </div>
-        <Toaster />
-      </SidebarProvider>
+          <Toaster />
+        </SidebarProvider>
+      </ERPProvider>
     </QueryClientProvider>
   );
 }
