@@ -28,6 +28,7 @@ import {
   type Produto,
   type Sugestao,
 } from "./erp-data";
+import { carregarDoBanco, salvarNoBanco } from "./erp-db";
 
 export type ERPState = {
   produtos: Produto[];
@@ -44,7 +45,6 @@ export type ERPState = {
   seqNotificacao: number;
 };
 
-const STORAGE_KEY = "techdist-erp-v2";
 
 function estadoInicial(): ERPState {
   return {
@@ -367,24 +367,46 @@ export function ERPProvider({ children }: { children: ReactNode }) {
   const hidratado = useRef(false);
   const notificacoesVistas = useRef<Set<string> | null>(null);
 
-  // Carrega o estado salvo somente no cliente (evita divergência de hidratação no SSR).
+  const salvo = useRef<ERPState | null>(null);
+  const salvando = useRef(false);
+
+  // Carrega o estado do banco de dados somente no cliente.
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) dispatch({ type: "hidratar", state: { ...estadoInicial(), ...JSON.parse(raw) } });
-    } catch {
-      /* armazenamento indisponível: segue com os dados de demonstração */
-    }
-    hidratado.current = true;
+    let ativo = true;
+    carregarDoBanco(estadoInicial())
+      .then((s) => {
+        if (!ativo) return;
+        salvo.current = s;
+        dispatch({ type: "hidratar", state: s });
+        hidratado.current = true;
+      })
+      .catch(() => {
+        toast.error("Não foi possível conectar ao banco de dados", {
+          description: "Exibindo dados de demonstração sem salvar.",
+        });
+      });
+    return () => {
+      ativo = false;
+    };
   }, []);
 
+  // Grava no banco as alterações (agrupadas a cada 1,5s).
   useEffect(() => {
     if (!hidratado.current) return;
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-    } catch {
-      /* ignora */
-    }
+    const t = setTimeout(async () => {
+      if (salvando.current || !salvo.current || salvo.current === state) return;
+      salvando.current = true;
+      const antes = salvo.current;
+      try {
+        await salvarNoBanco(antes, state);
+        salvo.current = state;
+      } catch {
+        toast.error("Falha ao salvar alterações no banco de dados");
+      } finally {
+        salvando.current = false;
+      }
+    }, 1500);
+    return () => clearTimeout(t);
   }, [state]);
 
   // Simulação da operação em tempo real (vendas, reservas, expedições).
