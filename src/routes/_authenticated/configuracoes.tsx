@@ -20,9 +20,11 @@ import { automacoesInfo, type Integracao, type Politica } from "@/lib/erp-data";
 import { useERP } from "@/lib/erp-store";
 import { cn } from "@/lib/utils";
 
-export const Route = createFileRoute("/configuracoes")({
+export const Route = createFileRoute("/_authenticated/configuracoes")({
   head: () => ({
     meta: [
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
       { title: "Configurações | TechDistribuidora ERP" },
       {
         name: "description",
