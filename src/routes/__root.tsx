@@ -180,7 +180,7 @@ function RootComponent() {
                 </div>
               </header>
               {/* Required: nested routes render here. */}
-              <main className="flex-1 p-4 sm:p-6">
+              <main className="flex-1 overflow-y-auto p-4 sm:p-6">
                 <Outlet />
               </main>
             </div>
