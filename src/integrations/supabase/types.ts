@@ -14,7 +14,150 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      configuracoes_erp: {
+        Row: {
+          dados: Json
+          id: number
+          updated_at: string
+        }
+        Insert: {
+          dados?: Json
+          id?: number
+          updated_at?: string
+        }
+        Update: {
+          dados?: Json
+          id?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      notificacoes: {
+        Row: {
+          automatica: boolean
+          data: number
+          descricao: string
+          id: string
+          lida: boolean
+          link: string
+          tipo: string
+          titulo: string
+        }
+        Insert: {
+          automatica?: boolean
+          data: number
+          descricao?: string
+          id: string
+          lida?: boolean
+          link?: string
+          tipo?: string
+          titulo: string
+        }
+        Update: {
+          automatica?: boolean
+          data?: number
+          descricao?: string
+          id?: string
+          lida?: boolean
+          link?: string
+          tipo?: string
+          titulo?: string
+        }
+        Relationships: []
+      }
+      ordens_compra: {
+        Row: {
+          atualizada_em: number
+          criada_em: number
+          fornecedor: string
+          id: string
+          motivo_rejeicao: string | null
+          origem: string
+          previsao_dias: number
+          produto: string
+          produto_id: string
+          quantidade: number
+          status: string
+          valor: number
+        }
+        Insert: {
+          atualizada_em: number
+          criada_em: number
+          fornecedor: string
+          id: string
+          motivo_rejeicao?: string | null
+          origem?: string
+          previsao_dias?: number
+          produto: string
+          produto_id: string
+          quantidade: number
+          status?: string
+          valor: number
+        }
+        Update: {
+          atualizada_em?: number
+          criada_em?: number
+          fornecedor?: string
+          id?: string
+          motivo_rejeicao?: string | null
+          origem?: string
+          previsao_dias?: number
+          produto?: string
+          produto_id?: string
+          quantidade?: number
+          status?: string
+          valor?: number
+        }
+        Relationships: []
+      }
+      produtos: {
+        Row: {
+          consumo_medio: number
+          custo_unitario: number
+          estoque: number
+          estoque_seguranca: number
+          fornecedor: string
+          id: string
+          lead_time: number
+          nome: string
+          ordem: number
+          ponto_pedido: number
+          reservado: number
+          sku: string
+          updated_at: string
+        }
+        Insert: {
+          consumo_medio?: number
+          custo_unitario?: number
+          estoque?: number
+          estoque_seguranca?: number
+          fornecedor?: string
+          id: string
+          lead_time?: number
+          nome: string
+          ordem?: number
+          ponto_pedido?: number
+          reservado?: number
+          sku: string
+          updated_at?: string
+        }
+        Update: {
+          consumo_medio?: number
+          custo_unitario?: number
+          estoque?: number
+          estoque_seguranca?: number
+          fornecedor?: string
+          id?: string
+          lead_time?: number
+          nome?: string
+          ordem?: number
+          ponto_pedido?: number
+          reservado?: number
+          sku?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
