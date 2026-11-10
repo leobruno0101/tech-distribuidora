@@ -126,7 +126,7 @@ function Configuracoes() {
             <p className="mt-2 text-sm text-white/80">Aplicada a novos produtos cadastrados.</p>
           </div>
 
-          <div className="flex flex-wrap items-end gap-x-4 gap-y-3.5">
+          <div className="grid grid-cols-2 gap-3 sm:flex sm:flex-wrap sm:items-end sm:gap-x-4 sm:gap-y-3.5">
             {camposPolitica.map(({ key, label }, idx) => {
               const destaque = key === "pontoPedido";
               return (
@@ -134,12 +134,12 @@ function Configuracoes() {
                   {idx > 0 && (
                     <span
                       aria-hidden="true"
-                      className="pb-3.5 text-[29px] leading-none font-medium text-amber"
+                      className="hidden pb-3.5 sm:block text-[29px] leading-none font-medium text-amber"
                     >
                       {operadores[idx - 1]}
                     </span>
                   )}
-                  <div className="flex flex-col gap-2">
+                  <div className="flex min-w-0 flex-col gap-2">
                     <Label
                       htmlFor={key}
                       className={
@@ -155,11 +155,13 @@ function Configuracoes() {
                       aria-invalid={!!erros[key]}
                       onChange={(e) => setCampos({ ...campos, [key]: e.target.value })}
                       className={cn(
-                        "rounded-3xl border-2 px-[19px] py-[15px] text-[29px] leading-tight font-bold tracking-[-0.03em]",
+                        "w-full rounded-3xl border-2 px-4 py-3.5 text-[24px] sm:px-[19px] sm:py-[15px] sm:text-[29px] leading-tight font-bold tracking-[-0.03em]",
                         destaque
                           ? "border-amber bg-amber text-black"
                           : "border-ink bg-ink text-white",
-                        key === "consumoMedio" || key === "leadTime" ? "w-[145px]" : "w-[162px]",
+                        key === "consumoMedio" || key === "leadTime"
+                          ? "sm:w-[145px]"
+                          : "sm:w-[162px]",
                       )}
                     />
                     {erros[key] && <p className="text-xs text-amber">{erros[key]}</p>}
@@ -171,7 +173,7 @@ function Configuracoes() {
                           onClick={() =>
                             setCampos({ ...campos, pontoPedido: String(pontoCalculado) })
                           }
-                          className="inline-flex max-w-[162px] items-start gap-1 text-left text-xs text-white underline hover:no-underline"
+                          className="inline-flex sm:max-w-[162px] items-start gap-1 text-left text-xs text-white underline hover:no-underline"
                         >
                           <Calculator className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
                           Usar fórmula: consumo × lead time + segurança = {pontoCalculado} un

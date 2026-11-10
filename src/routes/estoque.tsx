@@ -252,7 +252,8 @@ function Estoque() {
       contador: "bg-white text-ink",
     },
   ];
-  const diasTxt = (d: number) => (Number.isFinite(d) ? `${d.toFixed(1).replace(".", ",")} dias` : "—");
+  const diasTxt = (d: number) =>
+    Number.isFinite(d) ? `${d.toFixed(1).replace(".", ",")} dias` : "—";
 
   return (
     <div className="flex flex-col gap-6">
@@ -292,7 +293,7 @@ function Estoque() {
       </div>
 
       <div className="flex flex-wrap items-center gap-3">
-        <div className="flex flex-wrap items-center gap-2.5 rounded-full bg-white px-[15px] py-3.5">
+        <div className="flex flex-wrap items-center gap-2.5 rounded-3xl bg-white px-4 py-3.5 sm:rounded-full sm:px-[15px]">
           <span className="text-sm font-bold">Política padrão</span>
           <span className="rounded-full bg-muted px-3.5 py-1.5 text-[11px]">
             consumo médio {politica.consumoMedio} un/dia
