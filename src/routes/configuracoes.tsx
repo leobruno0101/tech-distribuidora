@@ -1,10 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState, type FormEvent } from "react";
+import { Fragment, useEffect, useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import { Calculator, Loader2, Plug, RefreshCw, Unplug } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
@@ -19,6 +18,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { automacoesInfo, type Integracao, type Politica } from "@/lib/erp-data";
 import { useERP } from "@/lib/erp-store";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/configuracoes")({
   head: () => ({
@@ -46,6 +46,8 @@ const camposPolitica: { key: keyof Politica; label: string }[] = [
   { key: "estoqueSeguranca", label: "Estoque de segurança (un)" },
   { key: "pontoPedido", label: "Ponto de pedido (un)" },
 ];
+
+const operadores = ["×", "+", "="] as const;
 
 const paraCampos = (p: Politica): CamposPolitica => ({
   consumoMedio: String(p.consumoMedio),
@@ -107,114 +109,161 @@ function Configuracoes() {
   };
 
   return (
-    <div className="mx-auto max-w-5xl space-y-6">
+    <div className="flex flex-col gap-6">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Configurações</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
+        <h1 className="text-[34px] leading-none font-bold tracking-[-0.04em] sm:text-[54px]">
+          Configurações
+        </h1>
+        <p className="mt-3 text-[13px] text-ink/80">
           Parâmetros da política de estoque e automações do sistema.
         </p>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Política de estoque padrão</CardTitle>
-          <CardDescription>Aplicada a novos produtos cadastrados.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={salvar} className="grid gap-4 sm:grid-cols-2">
-            {camposPolitica.map(({ key, label }) => (
-              <div key={key} className="space-y-2">
-                <Label htmlFor={key}>{label}</Label>
-                <Input
-                  id={key}
-                  inputMode="decimal"
-                  value={campos[key]}
-                  aria-invalid={!!erros[key]}
-                  onChange={(e) => setCampos({ ...campos, [key]: e.target.value })}
-                />
-                {erros[key] && <p className="text-xs text-danger">{erros[key]}</p>}
-                {key === "pontoPedido" && valido && pontoCalculado !== num(campos.pontoPedido) && (
-                  <button
-                    type="button"
-                    onClick={() => setCampos({ ...campos, pontoPedido: String(pontoCalculado) })}
-                    className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
-                  >
-                    <Calculator className="h-3.5 w-3.5" />
-                    Usar fórmula: consumo × lead time + segurança = {pontoCalculado} un
-                  </button>
-                )}
-              </div>
-            ))}
-            <label className="flex items-center gap-2 text-sm sm:col-span-2">
+      <section className="rounded-card bg-black p-6 text-white sm:p-10">
+        <form onSubmit={salvar} className="flex flex-col gap-7">
+          <div>
+            <h2 className="text-[24px] font-bold tracking-[-0.02em]">Política de estoque padrão</h2>
+            <p className="mt-2 text-sm text-white/80">Aplicada a novos produtos cadastrados.</p>
+          </div>
+
+          <div className="flex flex-wrap items-end gap-x-4 gap-y-3.5">
+            {camposPolitica.map(({ key, label }, idx) => {
+              const destaque = key === "pontoPedido";
+              return (
+                <Fragment key={key}>
+                  {idx > 0 && (
+                    <span
+                      aria-hidden="true"
+                      className="pb-3.5 text-[29px] leading-none font-medium text-amber"
+                    >
+                      {operadores[idx - 1]}
+                    </span>
+                  )}
+                  <div className="flex flex-col gap-2">
+                    <Label
+                      htmlFor={key}
+                      className={
+                        destaque ? "text-[11px] font-bold text-amber" : "text-[11px] text-white/85"
+                      }
+                    >
+                      {label}
+                    </Label>
+                    <input
+                      id={key}
+                      inputMode="decimal"
+                      value={campos[key]}
+                      aria-invalid={!!erros[key]}
+                      onChange={(e) => setCampos({ ...campos, [key]: e.target.value })}
+                      className={cn(
+                        "rounded-3xl border-2 px-[19px] py-[15px] text-[29px] leading-tight font-bold tracking-[-0.03em]",
+                        destaque
+                          ? "border-amber bg-amber text-black"
+                          : "border-ink bg-ink text-white",
+                        key === "consumoMedio" || key === "leadTime" ? "w-[145px]" : "w-[162px]",
+                      )}
+                    />
+                    {erros[key] && <p className="text-xs text-amber">{erros[key]}</p>}
+                    {key === "pontoPedido" &&
+                      valido &&
+                      pontoCalculado !== num(campos.pontoPedido) && (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setCampos({ ...campos, pontoPedido: String(pontoCalculado) })
+                          }
+                          className="inline-flex max-w-[162px] items-start gap-1 text-left text-xs text-white underline hover:no-underline"
+                        >
+                          <Calculator className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                          Usar fórmula: consumo × lead time + segurança = {pontoCalculado} un
+                        </button>
+                      )}
+                  </div>
+                </Fragment>
+              );
+            })}
+          </div>
+
+          <div className="flex flex-wrap items-center justify-between gap-5">
+            <label className="flex cursor-pointer items-center gap-3 text-[13px]">
               <Checkbox
                 checked={aplicarATodos}
                 onCheckedChange={(v) => setAplicarATodos(v === true)}
               />
               Aplicar também aos {state.produtos.length} produtos já cadastrados
             </label>
-            <div className="flex flex-wrap gap-2 sm:col-span-2">
-              <Button type="submit" disabled={!valido || (!alterado && !aplicarATodos)}>
+            <div className="flex flex-wrap gap-3">
+              <Button type="submit" size="lg" disabled={!valido || (!alterado && !aplicarATodos)}>
                 Salvar alterações
               </Button>
               <Button
                 type="button"
-                variant="outline"
+                size="lg"
+                variant="outline-on-dark"
                 disabled={!alterado}
                 onClick={() => setCampos(paraCampos(state.politica))}
               >
                 Descartar
               </Button>
             </div>
-          </form>
-        </CardContent>
-      </Card>
+          </div>
+        </form>
+      </section>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Automações</CardTitle>
-          <CardDescription>Reduza processos manuais da operação.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {automacoesInfo.map((a) => (
-            <div key={a.key} className="flex items-center justify-between gap-4">
-              <label htmlFor={`auto-${a.key}`} className="cursor-pointer">
-                <span className="text-sm">{a.texto}</span>
-                <span className="block text-xs text-muted-foreground">{a.detalhe}</span>
-              </label>
-              <Switch
-                id={`auto-${a.key}`}
-                checked={state.automacoes[a.key]}
-                onCheckedChange={(valor) => {
-                  dispatch({ type: "toggleAutomacao", key: a.key, valor, agora: Date.now() });
-                  toast.success(valor ? "Automação ativada" : "Automação desativada", {
-                    description:
-                      a.key === "iaAjuste" && valor
-                        ? "Sugestões pendentes da IA foram aplicadas."
-                        : a.texto,
-                  });
-                }}
-              />
-            </div>
-          ))}
-        </CardContent>
-      </Card>
+      <section className="flex flex-wrap items-start gap-5">
+        <article className="flex min-w-0 flex-[1.4_1_476px] flex-col gap-5 rounded-card bg-white p-6 sm:p-9">
+          <div>
+            <h2 className="text-[24px] font-bold tracking-[-0.02em]">Automações</h2>
+            <p className="mt-2 text-sm text-ink/80">Reduza processos manuais da operação.</p>
+          </div>
+          <div className="flex flex-wrap gap-3.5">
+            {automacoesInfo.map((a) => (
+              <div
+                key={a.key}
+                className="flex min-w-0 flex-[1_1_213px] flex-col gap-4 rounded-tile bg-muted p-[19px]"
+              >
+                <Switch
+                  id={`auto-${a.key}`}
+                  aria-label={a.texto}
+                  className="self-start"
+                  checked={state.automacoes[a.key]}
+                  onCheckedChange={(valor) => {
+                    dispatch({ type: "toggleAutomacao", key: a.key, valor, agora: Date.now() });
+                    toast.success(valor ? "Automação ativada" : "Automação desativada", {
+                      description:
+                        a.key === "iaAjuste" && valor
+                          ? "Sugestões pendentes da IA foram aplicadas."
+                          : a.texto,
+                    });
+                  }}
+                />
+                <label htmlFor={`auto-${a.key}`} className="cursor-pointer">
+                  <span className="block text-[14px] leading-tight font-bold tracking-[-0.01em]">
+                    {a.texto}
+                  </span>
+                  <span className="mt-1.5 block text-[11px] leading-normal text-ink/80">
+                    {a.detalhe}
+                  </span>
+                </label>
+              </div>
+            ))}
+          </div>
+        </article>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Integrações</CardTitle>
-          <CardDescription>Fontes de dados em tempo real.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3">
+        <article className="flex min-w-0 flex-[1_1_340px] flex-col gap-2 rounded-card bg-ink p-6 text-white sm:p-9">
+          <div className="mb-3">
+            <h2 className="text-[24px] font-bold tracking-[-0.02em]">Integrações</h2>
+            <p className="mt-2 text-sm text-white/80">Fontes de dados em tempo real.</p>
+          </div>
           {state.integracoes.map((i) => {
             const conectada = i.status === "conectada";
             return (
               <div
                 key={i.id}
-                className="flex flex-wrap items-center justify-between gap-3 rounded-lg border p-3"
+                className="flex flex-wrap items-center justify-between gap-3 border-t border-white/20 py-[15px]"
               >
-                <div className="min-w-0">
-                  <p className="text-sm font-medium">{i.nome}</p>
-                  <p className="text-xs text-muted-foreground">
+                <div className="min-w-0 flex-[1_1_170px]">
+                  <p className="text-[14px] font-bold tracking-[-0.01em]">{i.nome}</p>
+                  <p className="mt-1 text-[11px] text-white/80">
                     {conectada
                       ? `sync a cada ${i.intervalo}${
                           i.ultimaSync
@@ -224,12 +273,12 @@ function Configuracoes() {
                       : "aguardando credenciais"}
                   </p>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2.5">
                   <span
                     className={
                       conectada
-                        ? "rounded-full border border-success/30 bg-success-soft px-2.5 py-1 text-xs font-medium text-success"
-                        : "rounded-full border border-warning/40 bg-warning-soft px-2.5 py-1 text-xs font-medium text-warning-foreground"
+                        ? "rounded-full bg-amber px-3.5 py-1.5 text-xs font-bold text-black"
+                        : "rounded-full border-2 border-white px-3.5 py-1 text-xs font-bold"
                     }
                   >
                     {conectada ? "Conectada" : "Pendente"}
@@ -238,16 +287,20 @@ function Configuracoes() {
                     <>
                       <Button
                         size="sm"
-                        variant="outline"
+                        variant="outline-on-dark"
                         disabled={sincronizando === i.id}
                         onClick={() => sincronizar(i)}
                       >
-                        <RefreshCw className={sincronizando === i.id ? "animate-spin" : ""} />
+                        <RefreshCw
+                          className={sincronizando === i.id ? "animate-spin" : ""}
+                          aria-hidden="true"
+                        />
                         Sincronizar
                       </Button>
                       <Button
-                        size="sm"
+                        size="icon"
                         variant="ghost"
+                        className="text-white hover:bg-white/15"
                         aria-label={`Desconectar ${i.nome}`}
                         title="Desconectar"
                         onClick={() => {
@@ -255,12 +308,12 @@ function Configuracoes() {
                           toast.info(`${i.nome} desconectada`);
                         }}
                       >
-                        <Unplug />
+                        <Unplug aria-hidden="true" />
                       </Button>
                     </>
                   ) : (
                     <Button size="sm" onClick={() => setConectando(i)}>
-                      <Plug />
+                      <Plug aria-hidden="true" />
                       Conectar
                     </Button>
                   )}
@@ -268,8 +321,8 @@ function Configuracoes() {
               </div>
             );
           })}
-        </CardContent>
-      </Card>
+        </article>
+      </section>
 
       <ConectarDialog integracao={conectando} onClose={() => setConectando(null)} />
     </div>

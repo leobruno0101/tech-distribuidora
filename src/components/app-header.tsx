@@ -7,7 +7,6 @@ import {
   CheckCheck,
   CheckCircle2,
   Info,
-  RefreshCw,
   RotateCcw,
   Settings,
   ShieldAlert,
@@ -39,10 +38,10 @@ import type { Notificacao } from "@/lib/erp-data";
 import { cn } from "@/lib/utils";
 
 const iconeTipo: Record<Notificacao["tipo"], { icon: typeof Info; cls: string }> = {
-  critico: { icon: ShieldAlert, cls: "text-danger" },
-  alerta: { icon: AlertTriangle, cls: "text-warning" },
-  info: { icon: Info, cls: "text-primary" },
-  sucesso: { icon: CheckCircle2, cls: "text-success" },
+  critico: { icon: ShieldAlert, cls: "text-black" },
+  alerta: { icon: AlertTriangle, cls: "box-content rounded-full bg-amber p-0.5 text-black" },
+  info: { icon: Info, cls: "text-ink" },
+  sucesso: { icon: CheckCircle2, cls: "text-ink" },
 };
 
 function tempoRelativo(ts: number, agora: number) {
@@ -94,15 +93,16 @@ export function SyncButton() {
       onClick={sincronizar}
       disabled={sincronizando}
       title="Forçar sincronização com as integrações"
-      className="hidden items-center gap-1.5 rounded-md px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground sm:inline-flex"
+      className="inline-flex min-h-11 items-center gap-2.5 rounded-full bg-white px-[18px] py-2.5 text-sm text-ink transition-colors hover:bg-white/80 disabled:cursor-not-allowed disabled:opacity-50"
     >
-      <RefreshCw
+      <span
+        aria-hidden="true"
         className={cn(
-          "h-3.5 w-3.5 animate-spin",
-          sincronizando ? "[animation-duration:0.6s]" : "[animation-duration:4s]",
+          "h-[9px] w-[9px] rounded-full bg-amber",
+          sincronizando && "animate-pulse [animation-duration:0.6s]",
         )}
       />
-      {sincronizando ? "Sincronizando..." : `API sincronizada ${hora}`}
+      {sincronizando ? "Sincronizando..." : `Sincronizado via API · v2.4 · ${hora}`}
     </button>
   );
 }
@@ -126,11 +126,11 @@ export function NotificationBell() {
         <button
           type="button"
           aria-label={`Notificações (${naoLidas} não lidas)`}
-          className="relative inline-flex h-8 w-8 items-center justify-center rounded-md border transition-colors hover:bg-accent"
+          className="relative inline-flex h-11 w-11 items-center justify-center rounded-full bg-white transition-colors hover:bg-white/80"
         >
-          <Bell className="h-4 w-4 text-muted-foreground" />
+          <Bell className="h-5 w-5 text-ink" aria-hidden="true" />
           {naoLidas > 0 && (
-            <span className="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-danger px-1 text-[10px] font-semibold text-danger-foreground">
+            <span className="absolute -top-1 -right-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-black px-1 text-[11px] font-bold text-white">
               {naoLidas > 9 ? "9+" : naoLidas}
             </span>
           )}
@@ -181,7 +181,7 @@ export function NotificationBell() {
                       onClick={() => abrir(n)}
                       className={cn(
                         "flex w-full gap-3 px-4 py-3 text-left transition-colors hover:bg-accent",
-                        !n.lida && "bg-primary/5",
+                        !n.lida && "bg-amber/15",
                       )}
                     >
                       <Icon className={cn("mt-0.5 h-4 w-4 shrink-0", cls)} />
@@ -193,7 +193,10 @@ export function NotificationBell() {
                         </p>
                       </div>
                       {!n.lida && (
-                        <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-primary" />
+                        <span
+                          aria-hidden="true"
+                          className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-black"
+                        />
                       )}
                     </button>
                   </li>
@@ -219,7 +222,7 @@ export function UserMenu() {
           <button
             type="button"
             aria-label="Menu do usuário"
-            className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground transition-opacity hover:opacity-90"
+            className="flex h-11 w-11 items-center justify-center rounded-full bg-ink text-sm font-bold text-white transition-opacity hover:opacity-90"
           >
             LB
           </button>

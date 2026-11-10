@@ -2,11 +2,9 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import {
-  Download,
   MoreHorizontal,
   PackagePlus,
   Pencil,
-  Plus,
   Search,
   ShoppingCart,
   Trash2,
@@ -27,7 +25,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+
 import {
   Dialog,
   DialogContent,
@@ -61,6 +59,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { StatusBadge } from "@/components/status-badge";
+import { SegmentedControl } from "@/components/ui/segmented-control";
 import {
   cobertura,
   disponivel,
@@ -71,6 +70,7 @@ import {
   type StockStatus,
 } from "@/lib/erp-data";
 import { useERP } from "@/lib/erp-store";
+import { cn } from "@/lib/utils";
 
 type EstoqueSearch = { q?: string | undefined; status?: StockStatus | undefined };
 
@@ -149,6 +149,7 @@ function Estoque() {
   const { q = "", status } = Route.useSearch();
   const navigate = useNavigate({ from: "/estoque" });
   const [modal, setModal] = useState<Modal>(null);
+  const [visao, setVisao] = useState<"quadro" | "tabela">("quadro");
 
   const setBusca = (valor: string) =>
     navigate({ search: (s) => ({ ...s, q: valor || undefined }), replace: true });
@@ -185,21 +186,96 @@ function Estoque() {
 
   const { politica } = state;
 
+  const menuAcoes = (p: Produto, oc: ReturnType<typeof ordemAberta>) => (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button size="icon" variant="outline" aria-label={`Mais ações: ${p.nome}`}>
+          <MoreHorizontal aria-hidden="true" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem onSelect={() => setModal({ tipo: "ajustar", produto: p })}>
+          <Warehouse />
+          Ajustar estoque
+        </DropdownMenuItem>
+        <DropdownMenuItem onSelect={() => setModal({ tipo: "editar", produto: p })}>
+          <Pencil />
+          Editar política
+        </DropdownMenuItem>
+        <DropdownMenuItem disabled={!!oc} onSelect={() => gerarOrdem(p)}>
+          <ShoppingCart />
+          {oc ? "Ordem já em aberto" : "Gerar ordem de compra"}
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          disabled={p.reservado === 0}
+          onSelect={() => {
+            dispatch({ type: "liberarReserva", produtoId: p.id });
+            toast.success("Reserva liberada", {
+              description: `${p.reservado} un de ${p.nome} voltaram ao disponível.`,
+            });
+          }}
+        >
+          <Unlock />
+          Liberar reservas
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onSelect={() => setModal({ tipo: "remover", produto: p })}>
+          <Trash2 />
+          Remover produto
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+
+  const colunas: {
+    status: StockStatus;
+    titulo: string;
+    pill: string;
+    contador: string;
+  }[] = [
+    {
+      status: "ruptura",
+      titulo: statusLabel.ruptura,
+      pill: "bg-black text-white",
+      contador: "bg-amber text-black",
+    },
+    {
+      status: "alerta",
+      titulo: statusLabel.alerta,
+      pill: "bg-amber text-black",
+      contador: "bg-black text-white",
+    },
+    {
+      status: "saudavel",
+      titulo: statusLabel.saudavel,
+      pill: "bg-ink text-white",
+      contador: "bg-white text-ink",
+    },
+  ];
+  const diasTxt = (d: number) => (Number.isFinite(d) ? `${d.toFixed(1).replace(".", ",")} dias` : "—");
+
   return (
-    <div className="mx-auto max-w-7xl space-y-6">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Gestão de Estoque</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Política padrão: consumo médio {politica.consumoMedio} un/dia · lead time{" "}
-            {politica.leadTime} dias · estoque de segurança {politica.estoqueSeguranca} un · ponto
-            de pedido {politica.pontoPedido} un.{" "}
-            <Link to="/configuracoes" className="text-primary hover:underline">
-              Alterar
-            </Link>
+    <div className="flex flex-col gap-6">
+      <div className="flex flex-wrap items-end justify-between gap-5">
+        <div className="min-w-0 flex-[1_1_442px]">
+          <h1 className="text-[34px] leading-none font-bold tracking-[-0.04em] sm:text-[54px]">
+            Gestão de Estoque
+          </h1>
+          <p className="mt-3 text-[13px] text-ink/80">
+            Posições atualizadas automaticamente a cada 5 segundos
+            {state.automacoes.autoReserva ? " · reserva automática ativa" : ""}.
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap items-center gap-3">
+          <SegmentedControl
+            aria-label="Modo de visualização"
+            value={visao}
+            onChange={setVisao}
+            options={[
+              { value: "quadro", label: "Quadro" },
+              { value: "tabela", label: "Tabela" },
+            ]}
+          />
           <Button
             variant="outline"
             onClick={() => {
@@ -209,216 +285,308 @@ function Estoque() {
               });
             }}
           >
-            <Download />
             Exportar CSV
           </Button>
-          <Button onClick={() => setModal({ tipo: "novo" })}>
-            <Plus />
-            Novo produto
-          </Button>
+          <Button onClick={() => setModal({ tipo: "novo" })}>Novo produto</Button>
         </div>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-3">
-        {(["saudavel", "alerta", "ruptura"] as StockStatus[]).map((s) => {
-          const n = state.produtos.filter((p) => statusDoEstoque(p) === s).length;
-          const ativo = status === s;
-          return (
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2.5 rounded-full bg-white px-[15px] py-3.5">
+          <span className="text-sm font-bold">Política padrão</span>
+          <span className="rounded-full bg-muted px-3.5 py-1.5 text-[11px]">
+            consumo médio {politica.consumoMedio} un/dia
+          </span>
+          <span className="rounded-full bg-muted px-3.5 py-1.5 text-[11px]">
+            lead time {politica.leadTime} dias
+          </span>
+          <span className="rounded-full bg-muted px-3.5 py-1.5 text-[11px]">
+            estoque de segurança {politica.estoqueSeguranca} un
+          </span>
+          <span className="rounded-full bg-ink px-3.5 py-1.5 text-[11px] font-bold text-white">
+            ponto de pedido {politica.pontoPedido} un
+          </span>
+          <Link to="/configuracoes" className="px-2 text-[11px] font-bold underline">
+            Alterar
+          </Link>
+        </div>
+        <div className="relative w-full sm:w-72">
+          <Search
+            className="pointer-events-none absolute top-1/2 left-4 h-4 w-4 -translate-y-1/2 text-ink/70"
+            aria-hidden="true"
+          />
+          <Input
+            value={q}
+            onChange={(e) => setBusca(e.target.value)}
+            placeholder="Buscar produto ou SKU..."
+            aria-label="Buscar produto ou SKU"
+            className="rounded-full border-0 pr-10 pl-10"
+          />
+          {q && (
             <button
-              key={s}
               type="button"
-              onClick={() => setStatus(ativo ? "todos" : s)}
-              className={
-                "flex items-center justify-between rounded-xl border bg-card p-4 text-left transition-all hover:shadow-md " +
-                (ativo ? "border-primary/60 ring-2 ring-primary/20" : "")
-              }
+              onClick={() => setBusca("")}
+              aria-label="Limpar busca"
+              className="absolute top-1/2 right-3 -translate-y-1/2 rounded-full p-1 text-ink/70 hover:text-ink"
             >
-              <StatusBadge status={s} />
-              <span className="text-2xl font-semibold tabular-nums">{n}</span>
+              <X className="h-4 w-4" />
             </button>
-          );
-        })}
+          )}
+        </div>
+        <Select value={status ?? "todos"} onValueChange={setStatus}>
+          <SelectTrigger className="w-52 border-0" aria-label="Filtrar por status">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="todos">Todos os status</SelectItem>
+            <SelectItem value="saudavel">{statusLabel.saudavel}</SelectItem>
+            <SelectItem value="alerta">{statusLabel.alerta}</SelectItem>
+            <SelectItem value="ruptura">{statusLabel.ruptura}</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
-      <Card>
-        <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-3 space-y-0">
-          <div>
-            <CardTitle>Produtos monitorados</CardTitle>
-            <CardDescription className="mt-1">
-              Posições atualizadas automaticamente a cada 5 segundos
-              {state.automacoes.autoReserva ? " · reserva automática ativa" : ""}.
-            </CardDescription>
-          </div>
-          <div className="flex w-full flex-wrap gap-2 sm:w-auto">
-            <div className="relative flex-1 sm:w-64">
-              <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                value={q}
-                onChange={(e) => setBusca(e.target.value)}
-                placeholder="Buscar produto ou SKU..."
-                className="pr-8 pl-9"
-              />
-              {q && (
-                <button
-                  type="button"
-                  onClick={() => setBusca("")}
-                  aria-label="Limpar busca"
-                  className="absolute top-1/2 right-2 -translate-y-1/2 rounded p-0.5 text-muted-foreground hover:text-foreground"
+      {visao === "quadro" ? (
+        <section className="flex flex-wrap items-start gap-5">
+          {colunas
+            .filter((c) => !status || c.status === status)
+            .map((col) => {
+              const itens = filtrados
+                .filter((p) => statusDoEstoque(p) === col.status)
+                .sort((a, b) => cobertura(a) - cobertura(b));
+              return (
+                <div
+                  key={col.status}
+                  className="flex min-w-0 flex-[1_1_340px] flex-col gap-3.5 rounded-card bg-white/55 p-3.5"
                 >
-                  <X className="h-4 w-4" />
-                </button>
-              )}
-            </div>
-            <Select value={status ?? "todos"} onValueChange={setStatus}>
-              <SelectTrigger className="w-48">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todos">Todos os status</SelectItem>
-                <SelectItem value="saudavel">{statusLabel.saudavel}</SelectItem>
-                <SelectItem value="alerta">{statusLabel.alerta}</SelectItem>
-                <SelectItem value="ruptura">{statusLabel.ruptura}</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </CardHeader>
-        <CardContent className="px-0 sm:px-6">
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="min-w-[200px]">Produto</TableHead>
-                  <TableHead className="text-right">Estoque</TableHead>
-                  <TableHead className="text-right">Reservado</TableHead>
-                  <TableHead className="text-right">Disponível</TableHead>
-                  <TableHead className="text-right">Consumo Médio</TableHead>
-                  <TableHead className="text-right">Lead Time</TableHead>
-                  <TableHead className="text-right">Est. Segurança</TableHead>
-                  <TableHead className="text-right">Cobertura</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Ações</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filtrados.length === 0 && (
-                  <TableRow>
-                    <TableCell colSpan={10} className="py-10 text-center text-muted-foreground">
-                      Nenhum produto encontrado com esses filtros.
-                    </TableCell>
-                  </TableRow>
-                )}
-                {filtrados.map((p) => {
-                  const oc = ordemAberta(p.id);
-                  const dias = cobertura(p);
-                  return (
-                    <TableRow key={p.id}>
-                      <TableCell>
-                        <p className="font-medium">{p.nome}</p>
-                        <p className="text-xs text-muted-foreground">
-                          SKU {p.sku}
-                          {oc && (
-                            <>
-                              {" · "}
-                              <Link to="/compras" className="text-primary hover:underline">
+                  <h2
+                    className={cn(
+                      "flex items-center justify-between rounded-full py-3 pr-3.5 pl-6 text-lg font-bold",
+                      col.pill,
+                    )}
+                  >
+                    {col.titulo}
+                    <span
+                      className={cn(
+                        "flex h-[29px] w-[29px] items-center justify-center rounded-full text-base",
+                        col.contador,
+                      )}
+                    >
+                      {itens.length}
+                    </span>
+                  </h2>
+                  {itens.length === 0 && (
+                    <p className="px-3 pb-2 text-center text-sm text-ink/80">
+                      Nenhum produto neste status.
+                    </p>
+                  )}
+                  {itens.map((p) => {
+                    const oc = ordemAberta(p.id);
+                    const dias = cobertura(p);
+                    const wCob = Number.isFinite(dias) ? Math.min(260, dias * 20) : 260;
+                    const wLead = Math.min(260, p.leadTime * 20);
+                    return (
+                      <article
+                        key={p.id}
+                        className="flex flex-col gap-4 rounded-tile bg-white p-[19px]"
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <h3 className="break-words text-[16px] font-bold tracking-[-0.01em]">
+                              {p.nome}
+                            </h3>
+                            <p className="mt-0.5 text-xs text-ink/70">SKU {p.sku}</p>
+                            {oc && (
+                              <Link
+                                to="/compras"
+                                className="mt-2 inline-block rounded-full bg-black px-3 py-1 text-xs font-bold text-white"
+                              >
                                 {oc.id} {oc.status === "aprovada" ? "em trânsito" : "pendente"}
                               </Link>
-                            </>
-                          )}
-                        </p>
-                      </TableCell>
-                      <TableCell className="text-right font-semibold tabular-nums">
-                        {p.estoque} un
-                      </TableCell>
-                      <TableCell className="text-right tabular-nums text-muted-foreground">
-                        {p.reservado} un
-                      </TableCell>
-                      <TableCell className="text-right font-semibold tabular-nums">
-                        {disponivel(p)} un
-                      </TableCell>
-                      <TableCell className="text-right tabular-nums">
-                        {p.consumoMedio} un/dia
-                      </TableCell>
-                      <TableCell className="text-right tabular-nums">{p.leadTime} dias</TableCell>
-                      <TableCell className="text-right tabular-nums">
-                        {p.estoqueSeguranca} un
-                      </TableCell>
-                      <TableCell
-                        className={
-                          "text-right tabular-nums " +
-                          (dias < p.leadTime ? "font-medium text-danger" : "")
-                        }
-                      >
-                        {Number.isFinite(dias) ? `${dias.toFixed(1).replace(".", ",")} dias` : "—"}
-                      </TableCell>
-                      <TableCell>
-                        <StatusBadge status={statusDoEstoque(p)} />
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-1">
+                            )}
+                          </div>
+                          <div className="shrink-0 text-right">
+                            <div className="text-[37px] leading-none font-bold tracking-[-0.04em]">
+                              {disponivel(p)}
+                            </div>
+                            <div className="mt-0.5 text-xs text-ink/70">un disponíveis</div>
+                          </div>
+                        </div>
+                        <div className="flex flex-col gap-2.5">
+                          <div>
+                            <div className="flex justify-between text-[11px]">
+                              <span>Cobertura</span>
+                              <span className="font-bold">{diasTxt(dias)}</span>
+                            </div>
+                            <svg
+                              width="100%"
+                              height="10"
+                              viewBox="0 0 260 10"
+                              preserveAspectRatio="none"
+                              role="img"
+                              aria-label={`Cobertura de ${diasTxt(dias)}`}
+                              className="mt-1 block"
+                            >
+                              <rect width="260" height="10" rx="5" fill="#E5E5E5" />
+                              <rect
+                                x="0.75"
+                                y="0.75"
+                                width={Math.max(wCob - 1.5, 0)}
+                                height="8.5"
+                                rx="4.25"
+                                fill="#FCA311"
+                                stroke="#14213D"
+                                strokeWidth="1.5"
+                              />
+                            </svg>
+                          </div>
+                          <div>
+                            <div className="flex justify-between text-[11px]">
+                              <span>Lead time</span>
+                              <span className="font-bold">{p.leadTime} dias</span>
+                            </div>
+                            <svg
+                              width="100%"
+                              height="10"
+                              viewBox="0 0 260 10"
+                              preserveAspectRatio="none"
+                              role="img"
+                              aria-label={`Lead time de ${p.leadTime} dias`}
+                              className="mt-1 block"
+                            >
+                              <rect width="260" height="10" rx="5" fill="#E5E5E5" />
+                              <rect width={wLead} height="10" rx="5" fill="#14213D" />
+                            </svg>
+                          </div>
+                        </div>
+                        <div className="flex flex-wrap gap-x-5 gap-y-2 text-[11px] text-ink/80">
+                          <span>
+                            Estoque <b className="text-ink">{p.estoque}</b>
+                          </span>
+                          <span>
+                            Reservado <b className="text-ink">{p.reservado}</b>
+                          </span>
+                          <span>
+                            Consumo <b className="text-ink">{p.consumoMedio} un/dia</b>
+                          </span>
+                          <span>
+                            Segurança <b className="text-ink">{p.estoqueSeguranca}</b>
+                          </span>
+                        </div>
+                        <div className="flex gap-2">
                           <Button
-                            size="sm"
-                            variant="secondary"
+                            variant="navy"
+                            className="flex-1"
                             disabled={disponivel(p) === 0}
                             onClick={() => setModal({ tipo: "reservar", produto: p })}
                           >
-                            <Zap className="h-4 w-4" />
                             Reservar
                           </Button>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button size="sm" variant="ghost" aria-label="Mais ações">
-                                <MoreHorizontal />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem
-                                onSelect={() => setModal({ tipo: "ajustar", produto: p })}
-                              >
-                                <Warehouse />
-                                Ajustar estoque
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onSelect={() => setModal({ tipo: "editar", produto: p })}
-                              >
-                                <Pencil />
-                                Editar política
-                              </DropdownMenuItem>
-                              <DropdownMenuItem disabled={!!oc} onSelect={() => gerarOrdem(p)}>
-                                <ShoppingCart />
-                                {oc ? "Ordem já em aberto" : "Gerar ordem de compra"}
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                disabled={p.reservado === 0}
-                                onSelect={() => {
-                                  dispatch({ type: "liberarReserva", produtoId: p.id });
-                                  toast.success("Reserva liberada", {
-                                    description: `${p.reservado} un de ${p.nome} voltaram ao disponível.`,
-                                  });
-                                }}
-                              >
-                                <Unlock />
-                                Liberar reservas
-                              </DropdownMenuItem>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem
-                                className="text-danger focus:text-danger"
-                                onSelect={() => setModal({ tipo: "remover", produto: p })}
-                              >
-                                <Trash2 />
-                                Remover produto
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
+                          {menuAcoes(p, oc)}
                         </div>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-      </Card>
+                      </article>
+                    );
+                  })}
+                </div>
+              );
+            })}
+          {filtrados.length === 0 && (
+            <p className="w-full rounded-card-md bg-white py-10 text-center text-ink/80">
+              Nenhum produto encontrado com esses filtros.
+            </p>
+          )}
+        </section>
+      ) : (
+        <div className="overflow-x-auto rounded-card bg-white p-4 sm:p-6">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="min-w-[170px] text-[11px] text-ink/70">Produto</TableHead>
+                <TableHead className="text-right text-[11px] text-ink/70">Estoque</TableHead>
+                <TableHead className="text-right text-[11px] text-ink/70">Reservado</TableHead>
+                <TableHead className="text-right text-[11px] text-ink/70">Disponível</TableHead>
+                <TableHead className="text-right text-[11px] text-ink/70">Consumo Médio</TableHead>
+                <TableHead className="text-right text-[11px] text-ink/70">Lead Time</TableHead>
+                <TableHead className="text-right text-[11px] text-ink/70">Est. Segurança</TableHead>
+                <TableHead className="text-right text-[11px] text-ink/70">Cobertura</TableHead>
+                <TableHead className="text-[11px] text-ink/70">Status</TableHead>
+                <TableHead className="text-right text-[11px] text-ink/70">Ações</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filtrados.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={10} className="py-10 text-center text-ink/80">
+                    Nenhum produto encontrado com esses filtros.
+                  </TableCell>
+                </TableRow>
+              )}
+              {filtrados.map((p) => {
+                const oc = ordemAberta(p.id);
+                const dias = cobertura(p);
+                return (
+                  <TableRow key={p.id} className="border-t border-muted">
+                    <TableCell>
+                      <p className="font-bold">{p.nome}</p>
+                      <p className="text-xs text-ink/70">
+                        SKU {p.sku}
+                        {oc && (
+                          <>
+                            {" · "}
+                            <Link to="/compras" className="font-bold underline">
+                              {oc.id} {oc.status === "aprovada" ? "em trânsito" : "pendente"}
+                            </Link>
+                          </>
+                        )}
+                      </p>
+                    </TableCell>
+                    <TableCell className="text-right font-bold tabular-nums">
+                      {p.estoque} un
+                    </TableCell>
+                    <TableCell className="text-right tabular-nums text-ink/80">
+                      {p.reservado} un
+                    </TableCell>
+                    <TableCell className="text-right font-bold tabular-nums">
+                      {disponivel(p)} un
+                    </TableCell>
+                    <TableCell className="text-right tabular-nums">
+                      {p.consumoMedio} un/dia
+                    </TableCell>
+                    <TableCell className="text-right tabular-nums">{p.leadTime} dias</TableCell>
+                    <TableCell className="text-right tabular-nums">
+                      {p.estoqueSeguranca} un
+                    </TableCell>
+                    <TableCell
+                      className={cn(
+                        "text-right tabular-nums",
+                        dias < p.leadTime && "font-bold underline",
+                      )}
+                    >
+                      {diasTxt(dias)}
+                    </TableCell>
+                    <TableCell>
+                      <StatusBadge status={statusDoEstoque(p)} />
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-2">
+                        <Button
+                          size="sm"
+                          variant="navy"
+                          disabled={disponivel(p) === 0}
+                          onClick={() => setModal({ tipo: "reservar", produto: p })}
+                        >
+                          Reservar
+                        </Button>
+                        {menuAcoes(p, oc)}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </div>
+      )}
 
       <ReservarDialog modal={modal} onClose={() => setModal(null)} />
       <AjustarDialog modal={modal} onClose={() => setModal(null)} />
@@ -437,7 +605,6 @@ function Estoque() {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction
-              className="bg-danger text-danger-foreground hover:bg-danger/90"
               onClick={() => {
                 if (modal?.tipo !== "remover") return;
                 dispatch({ type: "removerProduto", produtoId: modal.produto.id });
@@ -511,7 +678,7 @@ function ReservarDialog({ modal, onClose }: { modal: Modal; onClose: () => void 
               ))}
             </div>
             {!valido && qtd !== "" && (
-              <p className="text-xs text-danger">Informe um valor entre 1 e {max}.</p>
+              <p className="text-xs font-medium">Informe um valor entre 1 e {max}.</p>
             )}
           </div>
           <DialogFooter>
@@ -730,7 +897,7 @@ function ProdutoDialog({ modal, onClose }: { modal: Modal; onClose: () => void }
         <form onSubmit={enviar}>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <PackagePlus className="h-5 w-5 text-primary" />
+              <PackagePlus className="h-5 w-5" aria-hidden="true" />
               {editando ? "Editar produto e política" : "Novo produto"}
             </DialogTitle>
             <DialogDescription>
