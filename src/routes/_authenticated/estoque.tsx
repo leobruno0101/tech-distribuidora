@@ -74,7 +74,7 @@ import { cn } from "@/lib/utils";
 
 type EstoqueSearch = { q?: string | undefined; status?: StockStatus | undefined };
 
-export const Route = createFileRoute("/estoque")({
+export const Route = createFileRoute("/_authenticated/estoque")({
   validateSearch: (s: Record<string, unknown>): EstoqueSearch => ({
     q: typeof s["q"] === "string" && s["q"] ? s["q"] : undefined,
     status:
@@ -84,6 +84,8 @@ export const Route = createFileRoute("/estoque")({
   }),
   head: () => ({
     meta: [
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
       { title: "Gestão de Estoque | TechDistribuidora ERP" },
       {
         name: "description",

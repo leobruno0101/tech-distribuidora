@@ -25,9 +25,11 @@ import { cobertura, demandaBase, disponivel, quantidadeSugerida, sugestoes } fro
 import { useERP } from "@/lib/erp-store";
 import { cn } from "@/lib/utils";
 
-export const Route = createFileRoute("/ia")({
+export const Route = createFileRoute("/_authenticated/ia")({
   head: () => ({
     meta: [
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
       { title: "Módulo de IA | TechDistribuidora ERP" },
       {
         name: "description",

@@ -28,9 +28,11 @@ import {
 import { useERP } from "@/lib/erp-store";
 import { cn } from "@/lib/utils";
 
-export const Route = createFileRoute("/")({
+export const Route = createFileRoute("/_authenticated/")({
   head: () => ({
     meta: [
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
       { title: "Visão Geral | TechDistribuidora ERP" },
       {
         name: "description",

@@ -1,5 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { ClipboardList, LayoutGrid, Package, SlidersHorizontal, Sparkles } from "lucide-react";
+import { ClipboardList, LayoutGrid, Package, SlidersHorizontal, Sparkles, ShoppingCart } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
@@ -8,6 +8,7 @@ const items = [
   { title: "Gestão de Estoque", url: "/estoque", icon: Package },
   { title: "Ordens de Compra", url: "/compras", icon: ClipboardList },
   { title: "Módulo de IA", url: "/ia", icon: Sparkles },
+  { title: "Vendas", url: "/vendas", icon: ShoppingCart },
   { title: "Configurações", url: "/configuracoes", icon: SlidersHorizontal },
 ] as const;
 
