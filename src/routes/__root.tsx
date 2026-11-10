@@ -124,20 +124,56 @@ function RootShell({ children }: { children: ReactNode }) {
   );
 }
 
+const titulosPagina: Record<string, string> = {
+  "/": "Visão Geral",
+  "/estoque": "Gestão de Estoque",
+  "/compras": "Ordens de Compra",
+  "/ia": "Módulo de IA",
+  "/configuracoes": "Configurações",
+};
+
+function GlobalSearch() {
+  const navigate = useNavigate();
+  const [busca, setBusca] = useState("");
+
+  const enviar = (e: FormEvent) => {
+    e.preventDefault();
+    if (!busca.trim()) return;
+    navigate({ to: "/estoque", search: { q: busca.trim() } });
+    setBusca("");
+  };
+
+  return (
+    <form onSubmit={enviar} className="relative hidden md:block">
+      <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+      <input
+        value={busca}
+        onChange={(e) => setBusca(e.target.value)}
+        placeholder="Buscar produto ou SKU..."
+        aria-label="Busca global"
+        className="h-9 w-56 rounded-lg border border-input bg-background pl-9 pr-3 text-sm outline-none transition-colors placeholder:text-muted-foreground focus-visible:ring-1 focus-visible:ring-ring lg:w-72"
+      />
+    </form>
+  );
+}
+
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const pathname = useRouterState({ select: (r) => r.location.pathname });
+  const titulo = titulosPagina[pathname] ?? "TechDistribuidora";
 
   return (
     <QueryClientProvider client={queryClient}>
       <ERPProvider>
         <SidebarProvider>
-          <div className="flex min-h-screen w-full">
+          <div className="flex h-screen w-full overflow-hidden">
             <AppSidebar />
             <div className="flex min-w-0 flex-1 flex-col">
-              <header className="sticky top-0 z-10 flex h-14 items-center gap-3 border-b bg-card/80 px-3 backdrop-blur sm:px-6">
+              <header className="sticky top-0 z-10 flex h-14 shrink-0 items-center gap-3 border-b bg-card px-3 sm:px-6">
                 <SidebarTrigger />
-                <span className="text-sm font-semibold">TechDistribuidora</span>
+                <h1 className="text-sm font-semibold text-foreground">{titulo}</h1>
                 <div className="ml-auto flex items-center gap-3">
+                  <GlobalSearch />
                   <SyncButton />
                   <NotificationBell />
                   <UserMenu />
