@@ -358,6 +358,8 @@ function reducer(s: ERPState, a: Action): ERPState {
 type ERPContextValue = {
   state: ERPState;
   dispatch: React.Dispatch<Action>;
+  refresh: () => Promise<void>;
+  flush: () => Promise<void>;
 };
 
 const ERPContext = createContext<ERPContextValue | null>(null);
@@ -441,7 +443,21 @@ export function ERPProvider({ children }: { children: ReactNode }) {
     }
   }, [state.notificacoes]);
 
-  const value = useMemo(() => ({ state, dispatch }), [state]);
+  const atual = useRef(state);
+  atual.current = state;
+  const flush = async () => {
+    if (!hidratado.current || !salvo.current || salvo.current === atual.current) return;
+    const depois = atual.current;
+    await salvarNoBanco(salvo.current, depois);
+    salvo.current = depois;
+  };
+  const refresh = async () => {
+    const s = await carregarDoBanco(estadoInicial());
+    salvo.current = s;
+    dispatch({ type: "hidratar", state: s });
+    hidratado.current = true;
+  };
+  const value = useMemo(() => ({ state, dispatch, refresh, flush }), [state]);
   return <ERPContext.Provider value={value}>{children}</ERPContext.Provider>;
 }
 

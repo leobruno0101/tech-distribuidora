@@ -11,7 +11,7 @@ export const getPos = createServerFn({ method: 'GET' }).middleware([requireSupab
   return { products: products.data ?? [], sales: sales.data ?? [], customers: customers.data ?? [] };
 });
 export const checkout = createServerFn({ method: 'POST' }).middleware([requireSupabaseAuth]).inputValidator(checkoutSchema).handler(async ({data,context}) => {
-  const result = await context.supabase.rpc('checkout_sale',{ p_items:data.items, p_payment:data.payment,p_request_id:data.requestId,p_customer_id:data.customerId ?? undefined });
+  const result = await context.supabase.rpc('checkout_sale',{ p_items:data.items, p_payment:data.payment,p_request_id:data.requestId,...(data.customerId ? {p_customer_id:data.customerId} : {}) });
   if (result.error) return { id:null, error: result.error.message.includes('Estoque Insuficiente') ? 'Estoque Insuficiente' : 'Não foi possível finalizar a venda. Tente novamente.' };
   return { id:result.data, error:null };
 });
